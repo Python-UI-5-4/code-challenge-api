@@ -10,4 +10,4 @@ class RedisConfig:
     PORT = get_env_var("REDIS_PORT", int)
     PASSWORD = get_env_var("REDIS_PASSWORD")
     DB = get_env_var("REDIS_DB", int)
-    REDIS_URI = f'job://:{PASSWORD}@{HOST}:{PORT}/{DB}'
+    REDIS_URI = f'redis://:{PASSWORD}@{HOST}:{PORT}/{DB}'

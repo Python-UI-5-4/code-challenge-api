@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from schemas import Schema
+from schema import Schema
 
 
 @dataclass
@@ -21,8 +21,8 @@ if __name__=='__main__':
         "testCaseIndex": 1,
         "memoryUsedMb": 15.2,
         "elapsedTimeMs": 120,
-        "runtime_error": None,
-        "compile_error": None
+        "runtimeError": None,
+        "compileError": None
     }
 
     verdict = Verdict.create_from_dict(input_dict)

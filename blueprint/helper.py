@@ -21,7 +21,7 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
 
     required_fields = {
         "/job/create": ["code", "codeLanguage", "challengeId", "userId"],
-        "/job/execute": ["jobId"],
+        "/job/execute": ["jobId", "userId"],
         "/job/delete": ["jobId"],
         "/job/cancel": ["jobId"],
     }
@@ -30,12 +30,12 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
     if missing_fields:
         return False
 
-    if "/job/create" == endpoint:
-        try:
-            int(request_body["challengeId"])
-            int(request_body["userId"])
-        except (ValueError, TypeError):
-            return False
+    for key in request_body.keys():
+        if key in ['userId', 'challengeId']:
+            try:
+                int(request_body[key])
+            except (ValueError, TypeError):
+                return False
 
     return True
 

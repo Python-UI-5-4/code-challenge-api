@@ -3,9 +3,7 @@ from dataclasses import dataclass
 import pytz
 import uuid
 
-from schemas import Schema
-from .enums import CodeChallengeJudgmentJobStatus as JobStatus
-from schemas.webhook import Verdict
+from schema import Schema, Verdict
 
 
 @dataclass
@@ -19,28 +17,26 @@ class CodeChallengeJudgmentJob(Schema):
 
     Attributes:
         job_id (str): 작업(Job)의 고유 ID (UUID)
-        job_status (JobStatus): 현재 작업 상태 (READY, IN_PROGRESS, COMPLETED, STOPPED)
         stop_flag (bool): 사용자에 의한 작업 중지 요청 여부
 
         code_language (str): 제출된 코드의 프로그래밍 언어
         code (str): 평가할 코드 문자열
 
         challenge_id (int): 코딩 챌린지 ID (문제 ID)
-        num_of_test_cases (int): 테스트 케이스 총 개수
+        total_test_cases (int): 테스트 케이스 총 개수
         last_test_case_index (int): 마지막으로 실행된 테스트 케이스 인덱스
-        verdicts (list[Verdict]): 각 테스트 케이스별 평가 결과
+        verdicts (list[Verdict]): 각 테스트 케이스별 평가 기록
 
         submitted_at (str): 작업이 제출된 시각 (ISO 8601 형식, KST)
     """
     job_id: str
-    job_status: JobStatus
     stop_flag: bool
 
     code_language: str
     code: str
 
     challenge_id: int
-    num_of_test_cases: int
+    total_test_cases: int
     last_test_case_index: int
     verdicts: list[Verdict]
 
@@ -51,20 +47,19 @@ class CodeChallengeJudgmentJob(Schema):
         code_language: str,
         code: str,
         challenge_id: int,
-        num_of_test_cases: int
+        total_test_cases: int
     ) -> "CodeChallengeJudgmentJob": # 반환 타입 힌팅에 내부적으로 순환 참조를 막기 위해 문자열 힌팅 사용
         """
         Description:
             새로운 평가 작업을 생성하는 팩토리 메서드.
             - job_id를 UUID로 생성
             - 제출 시각(submitted_at)을 KST(한국 시간)으로 설정
-            - job_status를 READY 상태로 초기화
 
         Args:
             code_language (str): 프로그래밍 언어
             code (str): 제출된 코드
             challenge_id (int): 평가할 챌린지(문제)의 ID
-            num_of_test_cases (int): 총 테스트 케이스 개수
+            total_test_cases (int): 총 테스트 케이스 개수
 
         Returns:
             CodeChallengeJudgmentJobEntity: 생성된 평가 작업 엔티티
@@ -73,15 +68,14 @@ class CodeChallengeJudgmentJob(Schema):
         now_in_seoul = datetime.datetime.now(seoul_tz)
         return CodeChallengeJudgmentJob(
             job_id=str(uuid.uuid4()),
-            job_status=JobStatus.READY,
             stop_flag=False,
 
             code_language=code_language.lower(),
             code=code,
 
             challenge_id=challenge_id,
-            num_of_test_cases=num_of_test_cases,
-            last_test_case_index=0,
+            total_test_cases=total_test_cases,
+            last_test_case_index=-1,
             verdicts=[],
 
             submitted_at=now_in_seoul.strftime('%Y-%m-%dT%H:%M:%S')
@@ -102,17 +96,16 @@ if __name__=='__main__':
 
     input_dict = {
         "jobId": "123-456",
-        "jobStatus": JobStatus.READY.value,
         "stopFlag": False,
 
         "codeLanguage": "java",
         "code": "hi",
 
         "challengeId": 1,
-        "numOfTestCases": 10,
+        "totalTestCases": 10,
         "lastTestCaseIndex": 1,
         "verdicts": [
-            verdict.as_dict()
+            verdict
         ],
 
         "submittedAt": "1234",

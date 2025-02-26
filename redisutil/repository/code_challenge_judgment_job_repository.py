@@ -3,10 +3,9 @@ from typing import Optional, Union
 import logging
 import time
 
-from redisutils import RedisConnection, RedisConnectionError
-from schemas.job import CodeChallengeJudgmentJob as Job
-from schemas.job import CodeChallengeJudgmentJobStatus as JobStatus
-from schemas.webhook import Verdict
+from redisutil import RedisConnection, RedisConnectionError
+from schema import Verdict
+from schema.job import CodeChallengeJudgmentJob as Job
 
 
 class CodeChallengeJudgmentJobRepository:
@@ -55,10 +54,10 @@ class CodeChallengeJudgmentJobRepository:
         return int(user_id_str)
 
 
-    def find_by_job_id(self, job_id: str):
+    def find_by_job_id(self, job_id: str) -> Optional[Job]:
         user_id: int = self.find_user_id_by_job_id(job_id)
         if user_id == -1:
-            return -1
+            return None
 
         return self.find_by_user_id_and_job_id(user_id, job_id)
 
@@ -109,14 +108,15 @@ class CodeChallengeJudgmentJobRepository:
 
     def update(self,
         job_id: str,
+        user_id: int = None,
         stop_flag: bool = None,
         last_test_case_index: int = None,
-        status: JobStatus = None,
         verdicts: list[Verdict] = None
     ) -> int:
-        user_id: int = self.find_user_id_by_job_id(job_id)
-        if user_id == -1:
-            return -1
+        if user_id is None:
+            user_id: int = self.find_user_id_by_job_id(job_id)
+            if user_id == -1:
+                return -1
 
         job = self.find_by_user_id_and_job_id(user_id, job_id)
 
@@ -141,9 +141,6 @@ class CodeChallengeJudgmentJobRepository:
 
         if last_test_case_index is not None:
             job.last_test_case_index = last_test_case_index
-
-        if status is not None:
-            job.status = status
 
         if verdicts is not None:
             job.verdicts = verdicts
@@ -189,6 +186,6 @@ try:
             db=RedisConfig.DB
         )
     )
-except RedisConnectionError as e:
-    print(e)
+except RedisConnectionError as ex:
+    logging.error(ex)
     exit(1)

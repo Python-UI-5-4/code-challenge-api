@@ -2,10 +2,10 @@ import logging
 import binascii
 from celery import Celery
 
-from blueprints.helper import *
+from blueprint.helper import *
 from common import TEST_CASES, TEST_CASE_EXECUTION_TIME_LIMIT
-from schemas.job import CodeChallengeJudgmentJob as Job
-from redisutils.repository import job_repository
+from schema.job import CodeChallengeJudgmentJob as Job
+from redisutil.repository import job_repository
 from config import RedisConfig, UserConfig
 
 
@@ -24,7 +24,7 @@ celery_client = Celery(
 
 @job_bp.errorhandler(Exception)
 def handle_exception(e):
-    logging.error("Unexpected exception occurred", exc_info=True)
+    logging.error("[Unexpected exception occurred]", exc_info=True)
     return error_response("Internal server error", 500)
 
 
@@ -94,7 +94,7 @@ def validate_request():
         request_body = flask.request.get_json()
         if not validate_request_body(request_body, '/job/execute'):
             return error_response(
-                "Request body must contain 'jobId'",
+                "Request body must contain 'userId'(integer) and 'jobId'",
                 400
             )
 
@@ -136,13 +136,13 @@ def create_job() :
 
     user_active_jobs: list[Job] = job_repository.find_by_user_id(user_id)
     if len(user_active_jobs) >= UserConfig.MAX_JOB_COUNT_PER_USER:
-        return error_response(f"Max job count({UserConfig.MAX_JOB_COUNT_PER_USER}) exceeded for userId({user_id})", 422)
+        return error_response(f"Max job count={UserConfig.MAX_JOB_COUNT_PER_USER} exceeded for userId:{user_id}", 422)
 
     job = Job.create(
         code_language=code_language,
         code=code,
         challenge_id=challenge_id,
-        num_of_test_cases=len(test_cases)
+        total_test_cases=len(test_cases)
     )
 
     test_case_time_limit: float = TEST_CASE_EXECUTION_TIME_LIMIT.get(challenge_id)
@@ -162,16 +162,17 @@ def create_job() :
 @job_bp.route('/execute', methods=['POST'])
 def execute_job():
     request_data = flask.request.get_json()
+    user_id = int(request_data['userId'])
     job_id = request_data['jobId']
 
-    job: Job = job_repository.find_by_job_id(job_id)
+    job: Job = job_repository.find_by_user_id_and_job_id(user_id, job_id)
     if not job:
-        return error_response(f"Job not found for jobId={job_id}", 404)
+        return error_response(f"Job not found", 404)
 
     # Celery task queue에 task를 등록
     # 매개변수 전달 시 python 기본 타입으로 전달
-    celery_client.send_task('worker.tasks.execute_code', args=[job.as_dict()])
-    return success_response({"numOfTestCases": job.num_of_test_cases}, 200)
+    celery_client.send_task('worker.tasks.execute_code', args=[user_id, job.as_dict()])
+    return success_response({"totalTestCases": job.total_test_cases}, 200)
 
 
 # 3) /job/delete
