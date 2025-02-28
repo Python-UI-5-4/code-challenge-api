@@ -172,7 +172,7 @@ def execute_job():
     # Celery task queue에 task를 등록
     # 매개변수 전달 시 python 기본 타입으로 전달
     celery_client.send_task('worker.tasks.execute_code', args=[user_id, job.as_dict()])
-    return success_response({"totalTestCases": job.total_test_cases}, 200)
+    return success_response({"totalTestCases": job.total_test_cases}, 202) # Accepted, 실제 요청에 대한 작업은 비동기 처리
 
 
 # 3) /job/delete
@@ -201,4 +201,4 @@ def cancel_job():
         logging.error("[Handling \"/job/cancel\" request failed. No exception but job doesn't updated]")
         return error_response("Internal server error", 500)
 
-    return success_response(http_status=200)
+    return success_response(http_status=202)
