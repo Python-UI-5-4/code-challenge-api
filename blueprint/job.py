@@ -98,21 +98,12 @@ def validate_request():
                 400
             )
 
-    # 3) /job/delete
-    elif flask.request.path == '/job/delete' and flask.request.method == 'DELETE':
-        request_body = flask.request.get_json()
-        if not validate_request_body(request_body, '/job/delete'):
-            return error_response(
-                "Request body must contain 'jobId'",
-                400
-            )
-
-    # 4) /job/cancel
+    # 3) /job/cancel
     elif flask.request.path == '/job/cancel' and flask.request.method == 'POST':
         request_body = flask.request.get_json()
         if not validate_request_body(request_body, '/job/cancel'):
             return error_response(
-                "Request body must contain 'jobId'",
+                "Request body must contain 'userId'(integer) and 'jobId'",
                 400
             )
 
@@ -175,24 +166,14 @@ def execute_job():
     return success_response({"totalTestCases": job.total_test_cases}, 202) # Accepted, 실제 요청에 대한 작업은 비동기 처리
 
 
-# 3) /job/delete
-@job_bp.route('/delete', methods=['DELETE'])
-def delete_job():
-    request_data = flask.request.get_json()
-    job_id = request_data['jobId']
-
-    if job_repository.delete(job_id) != 1:
-        return error_response("Job not found for job_id={job_id}", 404)
-
-    return success_response(http_status=200)
-
-# 4) /job/cancel
+# 3) /job/cancel
 @job_bp.route('/cancel', methods=['POST'])
 def cancel_job():
     request_data = flask.request.get_json()
+    user_id = int(request_data['userId'])
     job_id = request_data['jobId']
 
-    update_res = job_repository.update(job_id, stop_flag=True)
+    update_res = job_repository.update(job_id=job_id, user_id=user_id, stop_flag=True)
 
     if update_res == -1:
         return error_response("Job not found for user_id={user_id} with job_id={job_id}", 404)

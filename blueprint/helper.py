@@ -22,8 +22,7 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
     required_fields = {
         "/job/create": ["code", "codeLanguage", "challengeId", "userId"],
         "/job/execute": ["jobId", "userId"],
-        "/job/delete": ["jobId"],
-        "/job/cancel": ["jobId"],
+        "/job/cancel": ["jobId", "userId"],
     }
 
     missing_fields = [field for field in required_fields[endpoint] if request_body.get(field) is None]
@@ -40,7 +39,7 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
     return True
 
 
-def error_response(message: str, http_status: int) -> flask.Response:
+def error_response(message: str, http_status: int=500) -> flask.Response:
     response_data = {
         "success": False,
         "error": message
@@ -48,7 +47,7 @@ def error_response(message: str, http_status: int) -> flask.Response:
     return _convert_data_to_json_content_type_response(response_data, http_status)
 
 
-def success_response(data: Optional[dict] = None, http_status: int = 200) -> flask.Response:
+def success_response(data: Optional[dict] = None, http_status: int=200) -> flask.Response:
     response_data = {"success": True}
     if data:
         response_data.update(data)
