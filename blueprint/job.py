@@ -6,7 +6,7 @@ from blueprint.helper import *
 from common import TEST_CASES, TEST_CASE_EXECUTION_TIME_LIMIT
 from schema.job import CodeChallengeJudgmentJob as Job
 from redisutil.repository import job_repository
-from config import RedisConfig, UserConfig
+from config import RedisConfig, JobConfig
 
 
 job_bp = flask.Blueprint('job_bp', __name__)
@@ -126,8 +126,8 @@ def create_job() :
     test_cases = TEST_CASES.get(challenge_id)
 
     user_active_jobs: list[Job] = job_repository.find_by_user_id(user_id)
-    if len(user_active_jobs) >= UserConfig.MAX_JOB_COUNT_PER_USER:
-        return error_response(f"Max job count={UserConfig.MAX_JOB_COUNT_PER_USER} exceeded for userId:{user_id}", 422)
+    if len(user_active_jobs) >= JobConfig.MAX_JOB_COUNT_PER_USER:
+        return error_response(f"Max job count={JobConfig.MAX_JOB_COUNT_PER_USER} exceeded for userId:{user_id}", 422)
 
     job = Job.create(
         code_language=code_language,
@@ -136,9 +136,10 @@ def create_job() :
         total_test_cases=len(test_cases)
     )
 
-    test_case_time_limit: float = TEST_CASE_EXECUTION_TIME_LIMIT.get(challenge_id)
-    if job.code_language == "java":
-        test_case_time_limit += 1.0
+    # 테스트 케이스 별 시간 제한
+    test_case_time_limit: float = TEST_CASE_EXECUTION_TIME_LIMIT[challenge_id]
+    time_bonus = JobConfig.LANGUAGE_TIME_BONUS_SECONDS[job.code_language]
+    test_case_time_limit += time_bonus
 
     job_ttl = round(test_case_time_limit * len(test_cases) * 2) # job ttl은 정수형 값만 허용하므로 반올림
 
