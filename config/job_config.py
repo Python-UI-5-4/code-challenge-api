@@ -5,8 +5,8 @@ class JobConfig:
     """
     MAX_JOB_COUNT_PER_USER = 2
     VALID_LANGUAGE = {'java17', 'nodejs20', 'nodejs20esm'}
-    LANGUAGE_TIME_BONUS_SECONDS = {
+    LANGUAGE_EXEC_TIME_EXTRA_SEC = {
         'java17': 1.0,
         'nodejs20': 0.0,
-        'nodejsesm': 0.0
+        'nodejs20esm': 0.0
     }

@@ -3,7 +3,7 @@ import binascii
 from celery import Celery
 
 from blueprint.helper import *
-from common import TEST_CASES, TEST_CASE_EXECUTION_TIME_LIMIT
+from common import TEST_CASES, TEST_CASE_EXEC_TIME_LIMIT
 from schema.job import CodeChallengeJudgmentJob as Job
 from redisutil.repository import job_repository
 from config import RedisConfig, JobConfig
@@ -137,8 +137,8 @@ def create_job() :
     )
 
     # 테스트 케이스 별 시간 제한
-    test_case_time_limit: float = TEST_CASE_EXECUTION_TIME_LIMIT[challenge_id]
-    time_bonus = JobConfig.LANGUAGE_TIME_BONUS_SECONDS[job.code_language]
+    test_case_time_limit: float = TEST_CASE_EXEC_TIME_LIMIT[challenge_id]
+    time_bonus = JobConfig.LANGUAGE_EXEC_TIME_EXTRA_SEC[job.code_language]
     test_case_time_limit += time_bonus
 
     job_ttl = round(test_case_time_limit * len(test_cases) * 2) # job ttl은 정수형 값만 허용하므로 반올림
