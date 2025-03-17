@@ -5,7 +5,8 @@ import hmac
 import hashlib
 import base64
 
-from config import SecurityConfig, JobConfig
+from common import CodeLanguage
+from config import SecurityConfig
 
 
 def validate_request_body(request_body: dict, endpoint: str) -> bool:
@@ -37,7 +38,7 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
                 return False
         elif key == 'codeLanguage':
             # 허용된 codeLanguage 값 목록
-            if request_body[key] not in JobConfig.VALID_LANGUAGE:
+            if request_body[key].upper() not in [code_language.value for code_language in CodeLanguage]:
                 return False
 
     return True
