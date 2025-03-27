@@ -6,7 +6,7 @@ from blueprint.helper import *
 from common import *
 from schema.job import CodeChallengeJudgmentJob as Job
 from redisutil.repository import job_repository
-from config import RedisConfig, JobConfig
+from config import RedisConfig, JobConfig, TestCaseConfig
 
 
 job_bp = flask.Blueprint('job_bp', __name__)
@@ -59,7 +59,7 @@ def validate_request():
                 "Request body must contain valid 'userId'(integer), 'challengeId'(integer), 'code' and 'codeLanguage'",
                 400
             )
-        test_cases = get_test_cases(request_body["challengeId"])
+        test_cases = TestCaseConfig.get_test_cases(request_body["challengeId"])
         if not test_cases:
             return error_response("No test cases found for the provided 'challengeId'", 404)
 
@@ -131,7 +131,7 @@ def create_job() :
     code_language = CodeLanguage[request_data['codeLanguage'].upper()]
     code = request_data['code']
     challenge_id = int(request_data['challengeId'])
-    total_test_cases = len(get_test_cases(request_data["challengeId"]))
+    total_test_cases = len(TestCaseConfig.get_test_cases(request_data["challengeId"]))
 
     user_active_jobs: list[Job] = job_repository.find_by_user_id(user_id)
     if len(user_active_jobs) >= JobConfig.MAX_JOB_COUNT_PER_USER:
@@ -145,7 +145,7 @@ def create_job() :
     )
 
     # 테스트 케이스 별 시간 제한
-    test_case_time_limit = get_time_limit(challenge_id, job.code_language)
+    test_case_time_limit = TestCaseConfig.get_time_limit(challenge_id, job.code_language)
 
     job_ttl = round(test_case_time_limit * total_test_cases * 2) # job ttl은 정수형 값만 허용하므로 반올림
 
