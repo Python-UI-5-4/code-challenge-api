@@ -24,6 +24,7 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
         "/job/create": ["code", "codeLanguage", "challengeId", "userId"],
         "/job/execute": ["jobId", "userId"],
         "/job/cancel": ["jobId", "userId"],
+        "/job": ["jobId", "userId"],
     }
 
     missing_fields = [field for field in required_fields[endpoint] if request_body.get(field) is None]
@@ -45,15 +46,12 @@ def validate_request_body(request_body: dict, endpoint: str) -> bool:
 
 
 def error_response(message: str, http_status: int=500) -> flask.Response:
-    response_data = {
-        "success": False,
-        "error": message
-    }
+    response_data = {"error": message}
     return _convert_data_to_json_content_type_response(response_data, http_status)
 
 
 def success_response(data: Optional[dict] = None, http_status: int=200) -> flask.Response:
-    response_data = {"success": True}
+    response_data = {}
     if data:
         response_data.update(data)
     return _convert_data_to_json_content_type_response(response_data, http_status)
@@ -65,7 +63,22 @@ def _convert_data_to_json_content_type_response(data: dict, code: int) -> flask.
     return response
 
 
-def generate_hmac_key(_client_id: str) -> Optional[str]:
+def validate_hmac_key(received_key: str, received_client_id: str) -> bool:
+    """
+    요청에 포함된 HMAC 키의 유효성을 검증합니다.
+
+    Args:
+        received_key (str): 요청 헤더에서 받은 API 키
+        received_client_id (str): 요청 헤더에서 받은 클라이언트 식별자
+
+    Returns:
+        bool: 키가 유효하면 True, 아니면 False
+    """
+    expected_key = _generate_hmac_key(received_client_id)
+    return hmac.compare_digest(expected_key, received_key)
+
+
+def _generate_hmac_key(_client_id: str) -> Optional[str]:
     """
     HMAC-SHA256 기반으로 API 키를 생성합니다.
 
@@ -87,17 +100,5 @@ def generate_hmac_key(_client_id: str) -> Optional[str]:
 
     return api_key
 
-
-def validate_hmac_key(received_key: str, received_client_id: str) -> bool:
-    """
-    요청에 포함된 HMAC 키의 유효성을 검증합니다.
-
-    Args:
-        received_key (str): 요청 헤더에서 받은 API 키
-        received_client_id (str): 요청 헤더에서 받은 클라이언트 식별자
-
-    Returns:
-        bool: 키가 유효하면 True, 아니면 False
-    """
-    expected_key = generate_hmac_key(received_client_id)
-    return hmac.compare_digest(expected_key, received_key)
+if __name__=="__main__":
+    _generate_hmac_key("devolt")

@@ -59,7 +59,7 @@ def validate_request():
                 "Request body must contain valid 'userId'(integer), 'challengeId'(integer), 'code' and 'codeLanguage'",
                 400
             )
-        test_cases = TEST_CASES.get(str(request_body["challengeId"]), None)
+        test_cases = get_test_cases(request_body["challengeId"])
         if not test_cases:
             return error_response("No test cases found for the provided 'challengeId'", 404)
 
@@ -107,6 +107,14 @@ def validate_request():
                 400
             )
 
+    # 4) /job
+    elif flask.request.path == '/job' and flask.request.method == 'POST':
+        request_body = flask.request.get_json()
+        if not validate_request_body(request_body, '/job'):
+            return error_response(
+                "Request body must contain 'userId'(integer) and 'jobId'",
+                400
+            )
     return None
 
 
@@ -120,10 +128,10 @@ def create_job() :
     # request body 파싱
     request_data = flask.request.get_json()
     user_id = int(request_data['userId'])
-    code_language = request_data['codeLanguage'].upper()
+    code_language = CodeLanguage[request_data['codeLanguage'].upper()]
     code = request_data['code']
     challenge_id = int(request_data['challengeId'])
-    test_cases = TEST_CASES.get(str(challenge_id))
+    total_test_cases = len(get_test_cases(request_data["challengeId"]))
 
     user_active_jobs: list[Job] = job_repository.find_by_user_id(user_id)
     if len(user_active_jobs) >= JobConfig.MAX_JOB_COUNT_PER_USER:
@@ -133,15 +141,13 @@ def create_job() :
         code_language=code_language,
         code=code,
         challenge_id=challenge_id,
-        total_test_cases=len(test_cases)
+        total_test_cases=total_test_cases
     )
 
     # 테스트 케이스 별 시간 제한
-    test_case_time_limit: float = TEST_CASES_TIME_LIMITS[str(challenge_id)]
-    time_bonus = TEST_CASE_LIMITS_TIME_BONUS[job.code_language]
-    test_case_time_limit += time_bonus
+    test_case_time_limit = get_time_limit(challenge_id, job.code_language)
 
-    job_ttl = round(test_case_time_limit * len(test_cases) * 2) # job ttl은 정수형 값만 허용하므로 반올림
+    job_ttl = round(test_case_time_limit * total_test_cases * 2) # job ttl은 정수형 값만 허용하므로 반올림
 
     if job_repository.save(user_id, job, job_ttl) == 0:
         logging.error("[Handling \"/job/create\" request failed. No exception but job doesn't saved]")
@@ -184,3 +190,17 @@ def cancel_job():
         return error_response("Internal server error", 500)
 
     return success_response(http_status=202)
+
+
+#4) /job
+@job_bp.route('', methods=['POST'])
+def check_job_exists():
+    request_data = flask.request.get_json()
+    user_id = int(request_data['userId'])
+    job_id = request_data['jobId']
+
+    job: Job = job_repository.find_by_user_id_and_job_id(user_id, job_id)
+    if not job:
+        return error_response(f"Job not found", 404)
+    else:
+        return success_response(http_status=200)
