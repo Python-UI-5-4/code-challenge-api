@@ -61,7 +61,7 @@ def validate_request():
             )
         test_cases = TestCaseConfig.get_test_cases(request_body["challengeId"])
         if not test_cases:
-            return error_response("No test cases found for the provided 'challengeId'", 404)
+            return error_response(f"No test cases found for the provided 'challengeId'={request_body["challengeId"]}", 404)
 
         # 제출된 코드 유효성(크기 및 형식) 검사
         # 코드 검증(base64 디코딩, utf-8 디코딩, 파일 크기 검사 등) 자체는 보안 이슈를 발생시키지 않음
@@ -165,7 +165,7 @@ def execute_job():
 
     job: Job = job_repository.find_by_user_id_and_job_id(user_id, job_id)
     if not job:
-        return error_response(f"Job not found", 404)
+        return error_response(f"Job not found for user_id={user_id} with job_id={job_id}", 404)
 
     # Celery task queue에 task를 등록
     # 매개변수 전달 시 python 기본 타입으로 전달
@@ -183,7 +183,7 @@ def cancel_job():
     update_res = job_repository.update(job_id=job_id, user_id=user_id, stop_flag=True)
 
     if update_res == -1:
-        return error_response("Job not found for user_id={user_id} with job_id={job_id}", 404)
+        return error_response(f"Job not found for user_id={user_id} with job_id={job_id}", 404)
 
     elif update_res == 0:
         logging.error("[Handling \"/job/cancel\" request failed. No exception but job doesn't updated]")
@@ -201,6 +201,6 @@ def check_job_exists():
 
     job: Job = job_repository.find_by_user_id_and_job_id(user_id, job_id)
     if not job:
-        return error_response(f"Job not found", 404)
+        return error_response(f"Job not found for user_id={user_id} with job_id={job_id}", 404)
     else:
         return success_response(http_status=200)
