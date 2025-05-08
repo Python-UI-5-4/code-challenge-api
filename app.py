@@ -13,3 +13,4 @@ if __name__ == '__main__':
     app.register_blueprint(test_bp, url_prefix='/test')
 
     app.run()
+    #app.run(host="0.0.0.0", port=5000)
